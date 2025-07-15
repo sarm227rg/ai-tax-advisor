@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Pay Slip or Form 16</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Aptos+Display:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="container">
+        <h1>Upload Pay Slip or Form 16</h1>
+        <p class="subtitle">Supported format: PDF only</p>
+        <form id="pdf-upload-form" enctype="multipart/form-data" method="post" action="/api/upload-pdf">
+            <div class="upload-area" id="upload-area">
+                <span id="upload-text">Drag & drop your PDF here or click to select</span>
+            </div>
+            <input type="file" id="pdf-file" name="file" accept="application/pdf" required style="display:none;">
+            <button type="submit" id="upload-btn" class="start-btn" disabled>Upload</button>
+        </form>
+    </main>
+    <script>
+    const fileInput = document.getElementById('pdf-file');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadText = document.getElementById('upload-text');
+    const uploadArea = document.getElementById('upload-area');
+    const form = document.getElementById('pdf-upload-form');
+
+    // Show result
+    function showResult(message, isError = false) {
+        let resultDiv = document.getElementById('upload-result');
+        if (!resultDiv) {
+            resultDiv = document.createElement('div');
+            resultDiv.id = 'upload-result';
+            form.parentNode.appendChild(resultDiv);
+        }
+        resultDiv.textContent = message;
+        resultDiv.style.color = isError ? 'red' : 'green';
+    }
+
+    function showReviewForm(extractedData) {
+        // Hide upload form
+        form.style.display = 'none';
+        // Create review form
+        const reviewForm = document.createElement('form');
+        reviewForm.id = 'review-form';
+        reviewForm.className = 'review-form';
+        reviewForm.innerHTML = `
+            <h2>Review Extracted Data</h2>
+            <label for="extracted-text">Extracted Text:</label><br>
+            <textarea id="extracted-text" name="extracted_text" rows="10" style="width:100%;margin-bottom:1em;">${extractedData.raw_text || ''}</textarea><br>
+            <button type="button" id="gemini-btn" class="start-btn" style="margin-bottom:1em;">Parse with Gemini</button>
+            <div id="gemini-result"></div>
+            <div style="margin-bottom:1em;">
+                <label><input type="radio" name="tax_regime" value="old" checked> Old Regime</label>
+                <label style="margin-left:2em;"><input type="radio" name="tax_regime" value="new"> New Regime</label>
+            </div>
+            <button type="submit" class="start-btn">Continue</button>
+        `;
+        form.parentNode.appendChild(reviewForm);
+        reviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            showResult('Submitted! (Next phase not implemented)', false);
+        });
+
+        // Gemini button logic
+        const geminiBtn = reviewForm.querySelector('#gemini-btn');
+        const geminiResultDiv = reviewForm.querySelector('#gemini-result');
+        geminiBtn.onclick = async function() {
+            geminiBtn.disabled = true;
+            geminiResultDiv.textContent = 'Parsing with Gemini...';
+            const text = reviewForm.querySelector('#extracted-text').value;
+            try {
+                const response = await fetch('/api/extract-structured', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    geminiResultDiv.textContent = '';
+                    showStructuredForm(result.data);
+                } else {
+                    geminiResultDiv.textContent = 'Error: ' + (result.detail || 'Unknown error');
+                }
+            } catch (err) {
+                geminiResultDiv.textContent = 'Gemini request failed: ' + err;
+            }
+            geminiBtn.disabled = false;
+        };
+    }
+
+    function showStructuredForm(data) {
+        // Remove previous review form if any
+        const oldForm = document.getElementById('review-form');
+        if (oldForm) oldForm.remove();
+        // Create professional form
+        const formDiv = document.createElement('form');
+        formDiv.className = 'review-form';
+        formDiv.innerHTML = `
+            <div class="review-card">
+                <h2 style="margin-bottom: 1em;">Review Structured Data</h2>
+                <div class="review-section">
+                    <div class="review-grid">
+                        <label>Gross Salary<br><span class="currency">₹</span><input type="text" name="gross_salary" value="${data.gross_salary || ''}" placeholder="Gross Salary"></label>
+                        <label>Basic Salary<br><span class="currency">₹</span><input type="text" name="basic_salary" value="${data.basic_salary || ''}" placeholder="Basic Salary"></label>
+                        <label>HRA Received<br><span class="currency">₹</span><input type="text" name="hra_received" value="${data.hra_received || ''}" placeholder="HRA Received"></label>
+                        <label>Deduction 80C<br><span class="currency">₹</span><input type="text" name="deduction_80c" value="${data.deduction_80c || ''}" placeholder="80C"></label>
+                        <label>Deduction 80D<br><span class="currency">₹</span><input type="text" name="deduction_80d" value="${data.deduction_80d || ''}" placeholder="80D"></label>
+                    </div>
+                </div>
+                <div class="review-section" style="margin-top:1.5em;">
+                    <h3>Tax Regime</h3>
+                    <div style="margin-bottom:1em;">
+                        <label><input type="radio" name="tax_regime" value="old" checked> Old Regime</label>
+                        <label style="margin-left:2em;"><input type="radio" name="tax_regime" value="new"> New Regime</label>
+                    </div>
+                </div>
+                <button type="submit" class="start-btn" style="margin-top:1em;">Continue</button>
+                <div id="save-result" style="margin-top:1em;"></div>
+            </div>
+        `;
+        form.parentNode.appendChild(formDiv);
+        formDiv.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const saveResult = formDiv.querySelector('#save-result');
+            saveResult.textContent = 'Saving...';
+            // Gather form data
+            const formData = new FormData(formDiv);
+            const payload = {};
+            for (const [key, value] of formData.entries()) {
+                payload[key] = value;
+            }
+            try {
+                const response = await fetch('/api/save-user-financials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    saveResult.style.color = 'green';
+                    saveResult.textContent = 'Saved successfully! Redirecting to advisor...';
+                    setTimeout(() => {
+                        window.location.href = '/advisor?session_id=' + encodeURIComponent(result.session_id);
+                    }, 1000);
+                } else {
+                    saveResult.style.color = 'red';
+                    saveResult.textContent = 'Error: ' + (result.detail || 'Unknown error');
+                }
+            } catch (err) {
+                saveResult.style.color = 'red';
+                saveResult.textContent = 'Save failed: ' + err;
+            }
+        });
+    }
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            uploadBtn.disabled = false;
+            uploadText.textContent = fileInput.files[0].name;
+        } else {
+            uploadBtn.disabled = true;
+            uploadText.textContent = 'Drag & drop your PDF here or click to select';
+        }
+    });
+    uploadArea.addEventListener('dragover', e => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // AJAX form submit
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        uploadBtn.disabled = true;
+        showResult('Uploading...', false);
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch('/api/upload-pdf', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.status === 'ok') {
+                showResult('Extraction successful!');
+                showReviewForm(result.data);
+            } else {
+                showResult('Error: ' + result.detail, true);
+            }
+        } catch (err) {
+            showResult('Upload failed: ' + err, true);
+        }
+        uploadBtn.disabled = false;
+    });
+    </script>
+</body>
+</html> 
