@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Advisor – AI Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Aptos+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .chat-container { max-width: 540px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 6px 32px rgba(0,60,255,0.10); padding: 0 0 24px 0; }
+        .chat-header { padding: 1.5em 2em 1em 2em; border-bottom: 1.5px solid #e3f0ff; font-size: 1.3rem; font-weight: 700; color: #003cff; letter-spacing: -0.5px; }
+        #chat-bubbles { height: 340px; max-height: 45vh; overflow-y: auto; display: flex; flex-direction: column; padding: 1.2em 2em 0.5em 2em; }
+        .chat-form { display: flex; gap: 0.5em; padding: 0 2em; }
+        .chat-form input { flex: 1; padding: 0.7em 1em; border-radius: 8px; border: 1.5px solid #dbeafe; font-size: 1rem; }
+        .chat-form button { padding: 0 1.5em; }
+        .chat-bubble { margin: 0.5em 0; padding: 0.8em 1.2em; border-radius: 14px; max-width: 90%; font-size: 1rem; }
+        .chat-bubble.user { background: #e3f0ff; align-self: flex-end; }
+        .chat-bubble.assistant { background: #f4f8ff; align-self: flex-start; }
+        .chat-bubble.card { background: #fffbe6; border: 1.5px solid #ffe066; font-weight: 600; color: #3b4a6b; box-shadow: 0 2px 12px rgba(0,60,255,0.08); }
+        #chat-loading { margin: 1em 2em 0 2em; color: #003cff; display: none; }
+        @media (max-width: 700px) { .chat-container { max-width: 99vw; } #chat-bubbles, .chat-form { padding: 0 0.5em; } }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">AI Tax Advisor</div>
+        <div id="chat-bubbles"></div>
+        <form id="chat-form" class="chat-form">
+            <input type="text" id="chat-input" placeholder="Type your answer...">
+            <button type="submit" class="start-btn">Send</button>
+        </form>
+        <div id="chat-loading">Loading...</div>
+    </div>
+    <script>
+    // Get session_id from query string
+    function getSessionId() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('session_id');
+    }
+    const sessionId = getSessionId();
+    if (!sessionId) {
+        document.getElementById('chat-bubbles').innerHTML = '<div class="chat-bubble assistant">Session ID missing. Please start from the beginning.</div>';
+        document.getElementById('chat-form').style.display = 'none';
+    }
+    const chatBubbles = document.getElementById('chat-bubbles');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatLoading = document.getElementById('chat-loading');
+    let chatHistory = [];
+
+    function renderChatBubbles() {
+        chatBubbles.innerHTML = '';
+        for (const msg of chatHistory) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble ' + msg.role + (msg.isCard ? ' card' : '');
+            bubble.innerHTML = msg.content.replace(/\n/g, '<br>');
+            chatBubbles.appendChild(bubble);
+        }
+        chatBubbles.scrollTop = chatBubbles.scrollHeight;
+    }
+
+    // Initial: get Gemini's follow-up question
+    if (sessionId) {
+        chatLoading.style.display = 'block';
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId, history: chatHistory })
+        })
+        .then(res => res.json())
+        .then(result => {
+            chatLoading.style.display = 'none';
+            if (result.status === 'ok') {
+                chatHistory.push({ role: 'assistant', content: result.response, isCard: false });
+                renderChatBubbles();
+            } else {
+                chatHistory.push({ role: 'assistant', content: 'Error: ' + (result.detail || 'Unknown error'), isCard: false });
+                renderChatBubbles();
+            }
+        });
+    }
+
+    // On user send
+    if (chatForm) {
+        chatForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const userMsg = chatInput.value.trim();
+            if (!userMsg) return;
+            chatHistory.push({ role: 'user', content: userMsg });
+            renderChatBubbles();
+            chatInput.value = '';
+            chatLoading.style.display = 'block';
+            // Get Gemini's suggestions with full history
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId, user_message: userMsg, history: chatHistory })
+            });
+            const result = await res.json();
+            chatLoading.style.display = 'none';
+            if (result.status === 'ok') {
+                chatHistory.push({ role: 'assistant', content: result.response, isCard: true });
+                renderChatBubbles();
+            } else {
+                chatHistory.push({ role: 'assistant', content: 'Error: ' + (result.detail || 'Unknown error'), isCard: false });
+                renderChatBubbles();
+            }
+        };
+    }
+    </script>
+</body>
+</html> 

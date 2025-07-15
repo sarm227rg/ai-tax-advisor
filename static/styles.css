@@ -1,0 +1,235 @@
+body {
+    font-family: 'Aptos Display', Arial, sans-serif;
+    background: linear-gradient(135deg, #e3f0ff 0%, #f7fafd 100%);
+    color: #222;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.background-gradient {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+    background: radial-gradient(circle at 70% 20%, #b3d1ff 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, #dbeafe 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 60, 255, 0.10);
+    padding: 56px 40px 40px 40px;
+    max-width: 420px;
+    width: 95%;
+    text-align: center;
+    margin: 32px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #e3f0ff 60%, #b3d1ff 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    margin-bottom: 1.2em;
+    box-shadow: 0 2px 8px rgba(0, 60, 255, 0.08);
+}
+
+h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    margin-bottom: 0.2em;
+    color: #003cff;
+    letter-spacing: -1px;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    color: #3b4a6b;
+    margin-bottom: 0.7em;
+    font-weight: 500;
+}
+
+.description {
+    font-size: 1.05rem;
+    color: #444;
+    margin-bottom: 2.2em;
+}
+
+.start-btn {
+    background: linear-gradient(90deg, #003cff 60%, #005fff 100%);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 1em 2.5em;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 60, 255, 0.13);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    outline: none;
+}
+
+.start-btn:hover, .start-btn:focus {
+    background: linear-gradient(90deg, #002bb8 60%, #003cff 100%);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 24px rgba(0, 60, 255, 0.18);
+}
+
+.upload-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #003cff;
+    border-radius: 12px;
+    background: #f4f8ff;
+    color: #3b4a6b;
+    padding: 2.5em 1em;
+    margin-bottom: 1.5em;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 1.1rem;
+    min-height: 120px;
+    text-align: center;
+}
+.upload-area.dragover {
+    border-color: #005fff;
+    background: #e3f0ff;
+}
+#upload-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+#upload-text {
+    pointer-events: none;
+}
+#pdf-upload-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.review-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 6px 32px rgba(0, 60, 255, 0.10);
+    padding: 36px 28px 28px 28px;
+    max-width: 520px;
+    margin: 36px auto 0 auto;
+    font-family: 'Aptos Display', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.review-card h2 {
+    font-size: 1.6rem;
+    color: #003cff;
+    font-weight: 700;
+    margin-bottom: 1.2em;
+    letter-spacing: -0.5px;
+    text-align: center;
+}
+.review-section {
+    margin-bottom: 1.5em;
+}
+.review-card h3 {
+    font-size: 1.1rem;
+    color: #3b4a6b;
+    font-weight: 600;
+    margin-bottom: 0.7em;
+    background: #f4f8ff;
+    padding: 0.3em 0.7em;
+    border-radius: 6px;
+    display: inline-block;
+}
+.review-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1em 1.5em;
+}
+.review-card label {
+    font-size: 1rem;
+    color: #222;
+    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+}
+.review-card input[type="text"] {
+    font-size: 1rem;
+    padding: 0.6em 1em 0.6em 2.2em;
+    border: 1.5px solid #dbeafe;
+    border-radius: 7px;
+    background: #f7fafd;
+    color: #222;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.1em;
+}
+.review-card input[type="text"]:focus {
+    border: 1.5px solid #003cff;
+    box-shadow: 0 2px 8px rgba(0, 60, 255, 0.08);
+    background: #fff;
+}
+.review-card .currency {
+    position: absolute;
+    margin-left: 0.7em;
+    margin-top: 2.1em;
+    color: #003cff;
+    font-size: 1.1em;
+    pointer-events: none;
+}
+.review-card input[type="radio"] {
+    accent-color: #003cff;
+}
+.review-card button.start-btn {
+    margin-top: 1.2em;
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 1em 0;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 32px 8px 24px 8px;
+        max-width: 98vw;
+    }
+    h1 {
+        font-size: 1.4rem;
+    }
+    .logo {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+    }
+    .upload-area {
+        padding: 1.2em 0.5em;
+        font-size: 1rem;
+    }
+}
+@media (max-width: 700px) {
+    .review-card {
+        padding: 18px 4vw 18px 4vw;
+        max-width: 98vw;
+    }
+    .review-grid {
+        grid-template-columns: 1fr;
+        gap: 1em 0;
+    }
+} 
